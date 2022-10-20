@@ -1,9 +1,11 @@
 module KAUtils
 
+export linear_threads, to_device, type_from_device, device_from_type
+
 using KernelAbstractions
 using Preferences
 
-const BACKEND = @load_preference("backend")
+const BACKEND = @load_preference("backend", "CPU")
 @assert BACKEND ≢ nothing
 
 linear_threads(::CPU) = Threads.nthreads()
