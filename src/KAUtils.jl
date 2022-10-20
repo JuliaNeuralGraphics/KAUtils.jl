@@ -25,6 +25,7 @@ Base.fill(::CPU, value, shape) = fill(value, shape)
 @static if BACKEND == "ROC"
     using AMDGPU
     using ROCKernels
+    AMDGPU.allowscalar(false)
 
     linear_threads(::ROCDevice) = 512
     to_device(::ROCDevice, x) = ROCArray(x)
@@ -42,6 +43,7 @@ Base.fill(::CPU, value, shape) = fill(value, shape)
 elseif BACKEND == "CUDA"
     using CUDA
     using CUDAKernels
+    CUDA.allowscalar(false)
 
     linear_threads(::CUDADevice) = 512
     to_device(::CUDADevice, x) = CuArray(x)
