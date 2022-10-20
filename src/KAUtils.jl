@@ -26,6 +26,7 @@ Base.fill(::CPU, value, shape) = fill(value, shape)
     using AMDGPU
     using ROCKernels
     AMDGPU.allowscalar(false)
+    const DEVICE = AMDGPU.default_device()
 
     linear_threads(::ROCDevice) = 512
     to_device(::ROCDevice, x) = ROCArray(x)
@@ -44,6 +45,7 @@ elseif BACKEND == "CUDA"
     using CUDA
     using CUDAKernels
     CUDA.allowscalar(false)
+    const DEVICE = CUDADevice()
 
     linear_threads(::CUDADevice) = 512
     to_device(::CUDADevice, x) = CuArray(x)
@@ -58,6 +60,8 @@ elseif BACKEND == "CUDA"
     Base.rand(::CUDADevice, ::Type{T}, shape) where T = CUDA.rand(T, shape)
     Base.similar(::CUDADevice, ::Type{T}, shape) where T = CuArray{T}(undef, shape)
     Base.fill(::CUDADevice, value, shape) = CUDA.fill(value, shape)
+else
+    const DEVICE = CPU()
 end
 
 end
