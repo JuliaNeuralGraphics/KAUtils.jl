@@ -1,6 +1,6 @@
 module KAUtils
 
-export unsafe_free, to_device, type_from_device, device_from_type
+export unsafe_free!, to_device, type_from_device, device_from_type
 
 using KernelAbstractions
 using Preferences
