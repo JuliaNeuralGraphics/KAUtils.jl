@@ -1,6 +1,6 @@
 module KAUtils
 
-export linear_threads, to_device, type_from_device, device_from_type
+export unsafe_free, to_device, type_from_device, device_from_type
 
 using KernelAbstractions
 using Preferences
@@ -8,7 +8,6 @@ using Preferences
 const BACKEND = @load_preference("backend", "CPU")
 @assert BACKEND ≢ nothing
 
-linear_threads(::CPU) = Threads.nthreads()
 to_device(::CPU, x) = Array(x)
 type_from_device(::CPU) = Array
 
@@ -22,13 +21,14 @@ Base.rand(::CPU, ::Type{T}, shape) where T = rand(T, shape)
 Base.similar(::CPU, ::Type{T}, shape) where T = Array{T}(undef, shape)
 Base.fill(::CPU, value, shape) = fill(value, shape)
 
+unsafe_free!(x) = nothing
+
 @static if BACKEND == "ROC"
     using AMDGPU
     using ROCKernels
     AMDGPU.allowscalar(false)
     const DEVICE = AMDGPU.default_device()
 
-    linear_threads(::ROCDevice) = 512
     to_device(::ROCDevice, x) = ROCArray(x)
     type_from_device(::ROCDevice) = ROCArray
 
@@ -41,13 +41,14 @@ Base.fill(::CPU, value, shape) = fill(value, shape)
     Base.rand(::ROCDevice, ::Type{T}, shape) where T = AMDGPU.rand(T, shape)
     Base.similar(::ROCDevice, ::Type{T}, shape) where T = ROCArray{T}(undef, shape)
     Base.fill(::ROCDevice, value, shape) = AMDGPU.fill(value, shape)
+
+    unsafe_free!(x::T) where T <: ROCArray = AMDGPU.unsafe_free!(x)
 elseif BACKEND == "CUDA"
     using CUDA
     using CUDAKernels
     CUDA.allowscalar(false)
     const DEVICE = CUDADevice()
 
-    linear_threads(::CUDADevice) = 512
     to_device(::CUDADevice, x) = CuArray(x)
     type_from_device(::CUDADevice) = CuArray
 
@@ -60,6 +61,8 @@ elseif BACKEND == "CUDA"
     Base.rand(::CUDADevice, ::Type{T}, shape) where T = CUDA.rand(T, shape)
     Base.similar(::CUDADevice, ::Type{T}, shape) where T = CuArray{T}(undef, shape)
     Base.fill(::CUDADevice, value, shape) = CUDA.fill(value, shape)
+
+    unsafe_free!(x::T) where T <: CuArray = CUDA.unsafe_free!(x)
 else
     const DEVICE = CPU()
 end
